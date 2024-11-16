@@ -6,7 +6,12 @@ A website created by vue3. And it can talk to a model with an API
 
 # 相关技术
 vue3 + typescript + vite + highlight(第三方库) + marked(第三方库) + element-plus + router
-相应的模块文件也直接上传了
+
+<pre><code>npm i</code></pre>
+<pre><code>npm install highlight.js</code></pre>
+<pre><code>npm install marked</code></pre>
+<pre><code>npm install vue-router@4</code></pre>
+<pre><code>npm install element-plus --save</code></pre>
 
 # 已实现功能
 1. 可以通过API对模型进行调用，需要填写的内容为：API端口、API密钥、模型名称。其中模型的调用以阿里云的千问系列作为参考(人话：只适配了千问😢)，可进行多轮对话
