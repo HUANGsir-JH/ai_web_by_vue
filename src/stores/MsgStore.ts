@@ -1,10 +1,12 @@
 import { defineStore } from "pinia";
-import { reactive, ref } from "vue";
-
+import { reactive, ref, toRaw} from "vue";
 export const useMsgStore = defineStore('Msg', () => {
-    let Msgs = reactive<{ id:number; type: 'User'|'AI'|'Wrong'; time: string; message: string }[]>([]);
-    // type : user | assistant
+
+    let Msgs = reactive<{ id: number; type: 'User' | 'AI' | 'Wrong'; time: string; message: string }[]>([]);
     let id = ref(0);
+
+   
+    
     function addMessage(type: 'User'|'AI'|'Wrong', message: any) {
         Msgs.push({ id: id.value, type, time: getCurrentDateTime(), message });
         id.value++;
@@ -41,7 +43,7 @@ export const useMsgStore = defineStore('Msg', () => {
     }
 
     function clearMessages() {
-        Msgs.splice(0, Msgs.length);
+        Msgs.splice(0,Msgs.length);
         id.value = 0;
     }
 
@@ -49,6 +51,15 @@ export const useMsgStore = defineStore('Msg', () => {
         return Msgs;
     }
 
-    return { Msg: Msgs, addMessage, clearMessages, getMessages, getBeforeMessage };
+    function pushBeforeMsgs(messages: { id: number; type: 'User' | 'AI' | 'Wrong'; time: string; message: string }[]) {
+        if (Msgs.length == 0) {
+           for (let i = 0; i < messages.length; i++) {
+               Msgs.push(messages[i]);
+           }
+        }
+        id.value = Msgs.length;
+    }
+
+    return { Msg: Msgs,addMessage, clearMessages, getMessages, getBeforeMessage, pushBeforeMsgs };
 });
 

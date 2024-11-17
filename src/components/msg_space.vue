@@ -6,10 +6,10 @@
     </div>
     <div id="msg">
       <div>
-        <div v-for="(msg, index) in messages" :key="msg.id" class="msg-box">
+        <div v-for="(msg, index) in msgStore.Msg" :key="msg.id" class="msg-box">
           <div class="msg-content-box">
             <el-avatar>{{ msg.type }}</el-avatar>
-            <div class="msg-content" v-html="msg.message"></div>
+            <div class="msg-content" v-html="formatMessageContent(msg.message)"></div>
           </div>
           <div class="box-bottom">
             <p>Time : {{ msg.time }}</p>
@@ -38,35 +38,16 @@ import type { MarkedOptions, Renderer } from 'marked';
 
 const isBarOpenStore = useIsBarOpenStore();
 const msgStore = useMsgStore();
-const messages = reactive<{ id: number; type: 'User'|'AI'|'Wrong'; time: string; message: any}[]>([]);
 
-watch(msgStore.Msg , (newVal) => {
-  messages.push({
-    id: newVal[newVal.length-1].id,
-    type: newVal[newVal.length-1].type,
-    time: newVal[newVal.length-1].time,
-    message: formatMessageContent(newVal[newVal.length-1].message),
-  });
+
+watch(() => msgStore.Msg, (newVal) => {
   saveMessagesToLocalStorage();
   nextTick(() => {
     scrollToBottom();
   });
-}, { deep: true });
+});
 
 
-// function formatMessageContent(content: string) {
-//   marked.setOptions({
-//     highlight: function (code: string, lang: string) {
-//       const validLang = hljs.getLanguage(lang) ? lang : 'plaintext';
-//       return hljs.highlight(code,{language: validLang, ignoreIllegals:true }).value;
-//     },
-//     gfm: true,
-//     breaks: true,
-//     langPrefix: 'language-', // 添加这一行，确保语言类名正确添加
-//   } as MarkedOptions);
-
-//   return marked(content);
-// }
 function formatMessageContent(content: string) {
   // Create renderer with correct type
   const renderer = new marked.Renderer() as Renderer;
@@ -100,7 +81,6 @@ function formatMessageContent(content: string) {
 }
 
 
-
 const copyTextToClipboard = (text: string) => {
     navigator.clipboard.writeText(text).then(() => {
       ElMessage.success('Copied to clipboard');
@@ -116,7 +96,7 @@ const htmlToTextWithParser = (html: string): string => {
 };
 
 const CopyText = (msgId: number) => {
-    const msg = messages.find(message => message.id === msgId);
+  const msg = msgStore.Msg.find(msg => msg.id === msgId);
     if (msg) {
       const textToCopy = htmlToTextWithParser(msg.message);
       copyTextToClipboard(textToCopy);
@@ -149,7 +129,7 @@ const export_chat = () => {
         </style>
       </head>
       <body>
-        ${messages.map(msg => `
+        ${msgStore.Msg.map(msg => `
           <div class="msg-box">
             <div class="msg-content-box">
               <div class="el-avatar">${msg.type}</div>
@@ -179,19 +159,18 @@ const export_chat = () => {
   });
 };
 
-const new_chat = () => { 
-    ElMessageBox.confirm('Are you sure to clear all messages? This will not export the chat history.', 'Warning', {
-        confirmButtonText: 'OK',
-        cancelButtonText: 'Cancel',
-        type: 'warning',
-      }).then(() => {
-        messages.splice(0, messages.length);
-        msgStore.clearMessages();
-        saveMessagesToLocalStorage();
-        ElMessage.success('Cleared');
-      }).catch(() => {
-        ElMessage.info('Canceled');
-      });
+const new_chat = () => {
+  ElMessageBox.confirm('Are you sure to clear all messages? This will not export the chat history.', 'Warning', {
+    confirmButtonText: 'OK',
+    cancelButtonText: 'Cancel',
+    type: 'warning',
+  }).then(() => {
+    msgStore.clearMessages();
+    saveMessagesToLocalStorage();
+    ElMessage.success('Cleared');
+  }).catch(() => {
+    ElMessage.info('Canceled');
+  });
 }
 
 const scrollToBottom=()=>{
@@ -203,30 +182,29 @@ const scrollToBottom=()=>{
 
 //保存到本地
 const saveMessagesToLocalStorage = () => {
-  localStorage.setItem('messages', JSON.stringify(messages));
+  console.log('saveMessagesToLocalStorage');
+  localStorage.setItem('Msg', JSON.stringify(msgStore.Msg));
 }
 
 //从本地读取
 const loadMessagesFromLocalStorage = () => {
-  const messagesFromLocalStorage = localStorage.getItem('messages');
+  const messagesFromLocalStorage = localStorage.getItem('Msg');
   if (messagesFromLocalStorage) {
     const parsedMessages = JSON.parse(messagesFromLocalStorage);
-    parsedMessages.forEach((msg: any) => {
-      messages.push(msg);
-    });
+    msgStore.pushBeforeMsgs(parsedMessages);
   }
 }
 
 onMounted(() => {
   loadMessagesFromLocalStorage();
-  
+  window.addEventListener('beforeunload', saveMessagesToLocalStorage);
   nextTick(() => {
     scrollToBottom();
   });
 })
 
 onUnmounted(() => {
-  saveMessagesToLocalStorage();
+  window.removeEventListener('beforeunload', saveMessagesToLocalStorage);
 })
 
 </script>
